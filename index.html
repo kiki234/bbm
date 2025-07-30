@@ -11,6 +11,8 @@
     <!-- Link ke manifest.json untuk PWA -->
     <link rel="manifest" href="/manifest.json">
     <meta name="theme-color" content="#2563eb"/> <!-- Warna tema untuk browser/OS -->
+    <!-- html2pdf.js CDN for PDF generation -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -31,6 +33,33 @@
         }
         ::-webkit-scrollbar-thumb:hover {
             background: #555;
+        }
+        /* Styles for the receipt content (hidden by default) */
+        .receipt-content {
+            font-family: 'Inter', sans-serif;
+            padding: 20px;
+            max-width: 300px; /* Typical receipt width */
+            margin: 0 auto;
+            border: 1px dashed #ccc;
+            text-align: center;
+            font-size: 12px;
+            color: #000;
+        }
+        .receipt-content h2 {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        .receipt-content p {
+            margin-bottom: 3px;
+        }
+        .receipt-content .divider {
+            border-top: 1px dashed #ccc;
+            margin: 10px 0;
+        }
+        .receipt-content .total {
+            font-size: 14px;
+            font-weight: bold;
         }
     </style>
 </head>
@@ -171,7 +200,7 @@
         let app;
         let db;
         let auth;
-        let userId;
+        let userId; // This will store the actual Firebase UID or UUID
         let appId;
         let allFuelEntries = []; // To store all entries for export and calculations
 
@@ -189,7 +218,7 @@
         const loadingSpinner = document.getElementById('loadingSpinner');
         const totalLitersDisplay = document.getElementById('totalLiters');
         const totalCostDisplay = document.getElementById('totalCost');
-        const userIdDisplay = document.getElementById('userIdDisplay');
+        const userIdDisplay = document.getElementById('userIdDisplay'); // This span displays "E 3808 JM"
         const lastDistanceDisplay = document.getElementById('lastDistance');
         const avgConsumptionDisplay = document.getElementById('avgConsumption');
         const exportBtn = document.getElementById('exportBtn');
@@ -285,13 +314,13 @@
                 // Listen for auth state changes
                 onAuthStateChanged(auth, (user) => {
                     if (user) {
-                        userId = user.uid;
-                        userIdDisplay.textContent = userId;
+                        userId = user.uid; // Store actual Firebase UID
+                        // userIdDisplay.textContent = userId; // Do NOT overwrite fixed plate number
                         // Load fuel entries after successful authentication
                         loadFuelEntries();
                     } else {
                         userId = crypto.randomUUID(); // Fallback for unauthenticated users
-                        userIdDisplay.textContent = userId + " (Anonim)";
+                        // userIdDisplay.textContent = userId + " (Anonim)"; // Do NOT overwrite fixed plate number
                         showModal("Informasi", "Anda masuk sebagai pengguna anonim. Data Anda akan disimpan secara lokal.");
                         // For anonymous users, we might not load from Firestore unless they sign in.
                         // For this app, we will still attempt to use Firestore with the generated ID.
@@ -459,6 +488,7 @@
                         </div>
                         <div class="flex items-center space-x-4">
                             <p class="text-xl font-bold text-blue-600">${totalCost}</p>
+                            <button data-id="${entry.id}" class="print-btn px-3 py-1 bg-purple-500 text-white rounded-md hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:ring-offset-2 transition duration-150 ease-in-out">Cetak Struk</button>
                             <button data-id="${entry.id}" class="delete-btn px-3 py-1 bg-red-500 text-white rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2 transition duration-150 ease-in-out">Hapus</button>
                         </div>
                     `;
@@ -471,6 +501,18 @@
                         e.stopPropagation(); // Prevent triggering the edit modal
                         const id = e.target.dataset.id;
                         deleteFuelEntry(id);
+                    });
+                });
+
+                // Add event listeners for print buttons
+                document.querySelectorAll('.print-btn').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        e.stopPropagation(); // Prevent triggering the edit modal
+                        const id = e.target.dataset.id;
+                        const entryToPrint = allFuelEntries.find(entry => entry.id === id);
+                        if (entryToPrint) {
+                            generateReceiptPdf(entryToPrint);
+                        }
                     });
                 });
 
@@ -637,6 +679,45 @@
             document.body.removeChild(link);
         }
 
+        // Function to generate PDF receipt
+        function generateReceiptPdf(entry) {
+            const dateFormatted = new Date(entry.date).toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+            const totalCost = (entry.liters * entry.pricePerLiter).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' });
+            const litersFormatted = entry.liters.toLocaleString('id-ID', { maximumFractionDigits: 2 });
+            const pricePerLiterFormatted = entry.pricePerLiter.toLocaleString('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 });
+
+            const receiptContent = `
+                <div class="receipt-content">
+                    <h2>STRUK PENGISIAN BBM</h2>
+                    <p>-----------------------------------</p>
+                    <p><strong>${entry.vehicleName}</strong></p>
+                    <p>Plat Nomor: E 3808 JM</p>
+                    <p class="divider"></p>
+                    <p>Tanggal: ${dateFormatted}</p>
+                    <p>Jenis BBM: ${entry.fuelType}</p>
+                    <p>Liter: ${litersFormatted} L</p>
+                    <p>Harga/Liter: ${pricePerLiterFormatted}</p>
+                    <p>Odometer: ${entry.odometer.toLocaleString('id-ID')} KM</p>
+                    <p class="divider"></p>
+                    <p class="total">Total Biaya: ${totalCost}</p>
+                    <p class="divider"></p>
+                    <p>Terima Kasih!</p>
+                </div>
+            `;
+
+            const element = document.createElement('div');
+            element.innerHTML = receiptContent;
+
+            html2pdf().from(element).set({
+                margin: 10,
+                filename: `struk_bbm_${entry.vehicleName.toLowerCase().replace(/\s/g, '_')}_${entry.date}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, logging: true, dpi: 192, letterRendering: true },
+                jsPDF: { unit: 'mm', format: 'a7', orientation: 'portrait' } // a7 is small, good for receipts
+            }).save();
+        }
+
+
         // Event listener for fuel type change to update price per liter display
         fuelTypeSelect.addEventListener('change', () => {
             const selectedFuelType = fuelTypeSelect.value;
@@ -653,6 +734,7 @@
 
             const vehicleName = vehicleNameInput.value; // Value is fixed to "Scoopy"
             const date = dateInput.value;
+            // Parse totalAmountPaid directly as a number
             const totalAmountPaid = parseFloat(totalAmountPaidInput.value);
             const odometer = parseInt(odometerInput.value);
             const fuelType = fuelTypeSelect.value;
@@ -711,7 +793,7 @@
                     })
                     .catch(error => {
                         console.error('Pendaftaran Service Worker gagal:', error);
-                        console.error('Detail error:', error.message);
+                        console.error('Detail error (ini mungkin karena batasan lingkungan Canvas):', error.message);
                     });
             });
         }
