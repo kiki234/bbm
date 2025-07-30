@@ -67,7 +67,7 @@
     <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-4xl border border-gray-200">
         <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">Pencatat Pengisian BBM</h1>
         <p class="text-sm text-center text-gray-500 mb-4">
-            Nomor Plat Motor Anda: <span id="userIdDisplay" class="font-mono text-xs bg-gray-100 p-1 rounded">E 3808 JM</span>
+            Silakan Isi Dengan Benar
         </p>
 
         <!-- Form untuk menambahkan pengisian BBM -->
@@ -218,7 +218,7 @@
         const loadingSpinner = document.getElementById('loadingSpinner');
         const totalLitersDisplay = document.getElementById('totalLiters');
         const totalCostDisplay = document.getElementById('totalCost');
-        const userIdDisplay = document.getElementById('userIdDisplay'); // This span displays "E 3808 JM"
+        // const userIdDisplay = document.getElementById('userIdDisplay'); // This span is removed from HTML
         const lastDistanceDisplay = document.getElementById('lastDistance');
         const avgConsumptionDisplay = document.getElementById('avgConsumption');
         const exportBtn = document.getElementById('exportBtn');
@@ -315,13 +315,10 @@
                 onAuthStateChanged(auth, (user) => {
                     if (user) {
                         userId = user.uid; // Store actual Firebase UID
-                        // userIdDisplay.textContent = userId; // Do NOT overwrite fixed plate number
                         // Load fuel entries after successful authentication
                         loadFuelEntries();
                     } else {
                         userId = crypto.randomUUID(); // Fallback for unauthenticated users
-                        // userIdDisplay.textContent = userId + " (Anonim)"; // Do NOT overwrite fixed plate number
-                        showModal("Informasi", "Anda masuk sebagai pengguna anonim. Data Anda akan disimpan secara lokal.");
                         // For anonymous users, we might not load from Firestore unless they sign in.
                         // For this app, we will still attempt to use Firestore with the generated ID.
                         loadFuelEntries(); // Still try to load, but it will be user-specific.
@@ -352,7 +349,7 @@
             try {
                 // Ensure userId is available before attempting to save
                 if (!userId) {
-                    showModal("Kesalahan", "ID Pengguna tidak tersedia. Harap coba lagi.");
+                    showModal("Kesalahan", "ID Pengguna tidak tersedia. Harap coba lagi."); // This is a fallback for actual Firebase issues
                     hideSpinner();
                     return;
                 }
@@ -374,7 +371,7 @@
             showSpinner();
             try {
                 if (!userId) {
-                    showModal("Kesalahan", "ID Pengguna tidak tersedia. Harap coba lagi.");
+                    showModal("Kesalahan", "ID Pengguna tidak tersedia. Harap coba lagi."); // This is a fallback for actual Firebase issues
                     hideSpinner();
                     return;
                 }
@@ -429,7 +426,7 @@
                 showSpinner();
                 try {
                     if (!userId) {
-                        showModal("Kesalahan", "ID Pengguna tidak tersedia. Harap coba lagi.");
+                        showModal("Kesalahan", "ID Pengguna tidak tersedia. Harap coba lagi."); // This is a fallback for actual Firebase issues
                         hideSpinner();
                         return;
                     }
@@ -734,7 +731,7 @@
 
             // Check if userId is available before proceeding
             if (!userId) {
-                showModal("Informasi", "Aplikasi sedang memuat. Harap tunggu sebentar atau muat ulang halaman jika masalah berlanjut.");
+                showModal("Informasi", "Aplikasi sedang memuat data. Harap tunggu sebentar atau muat ulang halaman jika masalah berlanjut.");
                 return; // Stop function execution
             }
 
