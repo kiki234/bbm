@@ -732,6 +732,12 @@
         fuelForm.addEventListener('submit', async (e) => {
             e.preventDefault(); // Prevent default form submission
 
+            // Check if userId is available before proceeding
+            if (!userId) {
+                showModal("Informasi", "Aplikasi sedang memuat. Harap tunggu sebentar atau muat ulang halaman jika masalah berlanjut.");
+                return; // Stop function execution
+            }
+
             const vehicleName = vehicleNameInput.value; // Value is fixed to "Scoopy"
             const date = dateInput.value;
             // Parse totalAmountPaid directly as a number
