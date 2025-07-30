@@ -1,0 +1,720 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aplikasi Pencatat Pengisian BBM</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter Font -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Link ke manifest.json untuk PWA -->
+    <link rel="manifest" href="/manifest.json">
+    <meta name="theme-color" content="#2563eb"/> <!-- Warna tema untuk browser/OS -->
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+            color: #333;
+        }
+        /* Custom scrollbar for better aesthetics */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #e0e0e0;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+    <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-4xl border border-gray-200">
+        <h1 class="text-3xl font-bold text-center text-gray-800 mb-6">Pencatat Pengisian BBM</h1>
+        <p class="text-sm text-center text-gray-500 mb-4">
+            ID Pengguna Anda: <span id="userIdDisplay" class="font-mono text-xs bg-gray-100 p-1 rounded">Memuat...</span>
+        </p>
+
+        <!-- Form untuk menambahkan pengisian BBM -->
+        <form id="fuelForm" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8 p-4 bg-blue-50 rounded-lg shadow-inner">
+            <div class="col-span-1">
+                <label for="vehicleNameDisplay" class="block text-sm font-medium text-gray-700 mb-1">Nama Kendaraan</label>
+                <span id="vehicleNameDisplay" class="mt-1 block w-full px-3 py-2 bg-gray-100 text-gray-700 rounded-md shadow-sm border border-gray-300 sm:text-sm">Scoopy</span>
+                <!-- Hidden input to store the actual value -->
+                <input type="hidden" id="vehicleName" value="Scoopy">
+            </div>
+            <div class="col-span-1">
+                <label for="date" class="block text-sm font-medium text-gray-700 mb-1">Tanggal</label>
+                <input type="date" id="date" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+            </div>
+            <div class="col-span-1">
+                <label for="fuelType" class="block text-sm font-medium text-gray-700 mb-1">Jenis BBM</label>
+                <select id="fuelType" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    <option value="">Pilih Jenis BBM</option>
+                    <option value="Pertalite">Pertalite</option>
+                    <option value="Pertamax">Pertamax</option>
+                </select>
+            </div>
+            <div class="col-span-1">
+                <label for="totalAmountPaid" class="block text-sm font-medium text-gray-700 mb-1">Total Biaya (Rp)</label>
+                <input type="number" id="totalAmountPaid" step="100" min="0" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+            </div>
+            <div class="col-span-1">
+                <label for="displayPricePerLiter" class="block text-sm font-medium text-gray-700 mb-1">Harga per Liter (Otomatis)</label>
+                <span id="displayPricePerLiter" class="mt-1 block w-full px-3 py-2 bg-gray-100 text-gray-700 rounded-md shadow-sm border border-gray-300 sm:text-sm">Rp 0</span>
+            </div>
+            <div class="col-span-1">
+                <label for="odometer" class="block text-sm font-medium text-gray-700 mb-1">Odometer (KM)</label>
+                <input type="number" id="odometer" step="1" min="0" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+            </div>
+            <div class="col-span-full flex justify-center mt-2">
+                <button type="submit" class="w-full md:w-auto px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-150 ease-in-out">
+                    Tambah Pengisian
+                </button>
+            </div>
+        </form>
+
+        <!-- Statistik -->
+        <div class="bg-green-50 p-4 rounded-lg shadow-inner mb-8">
+            <h2 class="text-xl font-semibold text-gray-800 mb-3">Statistik Pengisian</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-gray-700">
+                <div>
+                    <p class="text-sm font-medium">Total Liter Terisi:</p>
+                    <p id="totalLiters" class="text-lg font-bold">0 L</p>
+                </div>
+                <div>
+                    <p class="text-sm font-medium">Total Biaya:</p>
+                    <p id="totalCost" class="text-lg font-bold">Rp 0</p>
+                </div>
+                <div>
+                    <p class="text-sm font-medium">Jarak Tempuh Terakhir:</p>
+                    <p id="lastDistance" class="text-lg font-bold">0 KM</p>
+                </div>
+                <div>
+                    <p class="text-sm font-medium">Konsumsi Rata-rata (KM/L):</p>
+                    <p id="avgConsumption" class="text-lg font-bold">0 KM/L</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tombol Ekspor -->
+        <div class="flex justify-center mb-8">
+            <button id="exportBtn" class="px-6 py-2 bg-green-600 text-white font-semibold rounded-lg shadow-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition duration-150 ease-in-out">
+                Ekspor ke Excel (CSV)
+            </button>
+        </div>
+
+        <!-- Daftar pengisian BBM -->
+        <h2 class="text-2xl font-semibold text-gray-800 mb-4">Riwayat Pengisian</h2>
+        <div id="fuelEntriesContainer" class="space-y-4 max-h-96 overflow-y-auto pr-2">
+            <!-- Entri BBM akan dimuat di sini oleh JavaScript -->
+            <p id="noEntriesMessage" class="text-center text-gray-500">Belum ada pengisian BBM tercatat.</p>
+        </div>
+
+        <!-- Loading Spinner -->
+        <div id="loadingSpinner" class="hidden fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-50">
+            <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-500"></div>
+            <p class="text-white ml-4 text-lg">Memuat data...</p>
+        </div>
+
+        <!-- Custom Modal for Alerts/Confirms and Editing -->
+        <div id="customModal" class="hidden fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center z-50">
+            <div class="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full">
+                <h3 id="modalTitle" class="text-xl font-bold mb-4 text-gray-800"></h3>
+                <p id="modalMessage" class="text-gray-700 mb-6"></p>
+                <!-- Edit Form Fields (hidden by default) -->
+                <div id="editFormFields" class="space-y-4 hidden">
+                    <input type="hidden" id="editEntryId">
+                    <div>
+                        <label for="editDate" class="block text-sm font-medium text-gray-700 mb-1">Tanggal</label>
+                        <input type="date" id="editDate" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    </div>
+                    <div>
+                        <label for="editFuelType" class="block text-sm font-medium text-gray-700 mb-1">Jenis BBM</label>
+                        <select id="editFuelType" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                            <option value="Pertalite">Pertalite</option>
+                            <option value="Pertamax">Pertamax</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="editTotalAmountPaid" class="block text-sm font-medium text-gray-700 mb-1">Total Biaya (Rp)</label>
+                        <input type="number" id="editTotalAmountPaid" step="100" min="0" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    </div>
+                    <div>
+                        <label for="editOdometer" class="block text-sm font-medium text-gray-700 mb-1">Odometer (KM)</label>
+                        <input type="number" id="editOdometer" step="1" min="0" class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    </div>
+                </div>
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button id="modalConfirmBtn" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 transition duration-150 ease-in-out hidden">Konfirmasi</button>
+                    <button id="modalSaveEditBtn" class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition duration-150 ease-in-out hidden">Simpan Perubahan</button>
+                    <button id="modalCloseBtn" class="px-4 py-2 bg-gray-400 text-white rounded-md hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-gray-300 focus:ring-offset-2 transition duration-150 ease-in-out">Tutup</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        // Import modul Firebase yang diperlukan
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, query, onSnapshot, doc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Global variables for Firebase instances
+        let app;
+        let db;
+        let auth;
+        let userId;
+        let appId;
+        let allFuelEntries = []; // To store all entries for export and calculations
+
+        // Get DOM elements
+        const fuelForm = document.getElementById('fuelForm');
+        const vehicleNameInput = document.getElementById('vehicleName'); // Hidden input for Scoopy
+        const dateInput = document.getElementById('date');
+        const totalAmountPaidInput = document.getElementById('totalAmountPaid');
+        const odometerInput = document.getElementById('odometer');
+        const fuelTypeSelect = document.getElementById('fuelType');
+        const displayPricePerLiterSpan = document.getElementById('displayPricePerLiter');
+
+        const fuelEntriesContainer = document.getElementById('fuelEntriesContainer');
+        const noEntriesMessage = document.getElementById('noEntriesMessage');
+        const loadingSpinner = document.getElementById('loadingSpinner');
+        const totalLitersDisplay = document.getElementById('totalLiters');
+        const totalCostDisplay = document.getElementById('totalCost');
+        const userIdDisplay = document.getElementById('userIdDisplay');
+        const lastDistanceDisplay = document.getElementById('lastDistance');
+        const avgConsumptionDisplay = document.getElementById('avgConsumption');
+        const exportBtn = document.getElementById('exportBtn');
+
+        // Modal elements
+        const customModal = document.getElementById('customModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalMessage = document.getElementById('modalMessage');
+        const modalCloseBtn = document.getElementById('modalCloseBtn');
+        const modalConfirmBtn = document.getElementById('modalConfirmBtn');
+        const modalSaveEditBtn = document.getElementById('modalSaveEditBtn');
+        const editFormFields = document.getElementById('editFormFields');
+
+        // Edit form fields within the modal
+        const editEntryId = document.getElementById('editEntryId');
+        const editDateInput = document.getElementById('editDate');
+        const editFuelTypeSelect = document.getElementById('editFuelType');
+        const editTotalAmountPaidInput = document.getElementById('editTotalAmountPaid');
+        const editOdometerInput = document.getElementById('editOdometer');
+
+        // Fixed prices for specific fuel types (only Pertalite and Pertamax)
+        const fixedFuelPrices = {
+            "Pertalite": 10000,
+            "Pertamax": 12500,
+        };
+
+        // Function to show custom modal
+        function showModal(title, message, isConfirm = false, onConfirm = null, isEdit = false) {
+            modalTitle.textContent = title;
+            modalMessage.textContent = message;
+
+            // Reset modal buttons and fields visibility
+            modalConfirmBtn.classList.add('hidden');
+            modalSaveEditBtn.classList.add('hidden');
+            editFormFields.classList.add('hidden');
+            modalMessage.classList.remove('hidden'); // Ensure message is visible by default
+
+            if (isConfirm) {
+                modalConfirmBtn.classList.remove('hidden');
+                modalConfirmBtn.onclick = () => {
+                    if (onConfirm) onConfirm();
+                    hideModal();
+                };
+            } else if (isEdit) {
+                modalMessage.classList.add('hidden'); // Hide message for edit mode
+                editFormFields.classList.remove('hidden');
+                modalSaveEditBtn.classList.remove('hidden');
+                modalSaveEditBtn.onclick = onConfirm; // onConfirm will be the save function
+            }
+            customModal.classList.remove('hidden');
+        }
+
+        // Function to hide custom modal
+        function hideModal() {
+            customModal.classList.add('hidden');
+            // Clear edit form fields when modal is closed
+            editEntryId.value = '';
+            editDateInput.value = '';
+            editFuelTypeSelect.value = '';
+            editTotalAmountPaidInput.value = '';
+            editOdometerInput.value = '';
+        }
+
+        // Event listener for modal close button
+        modalCloseBtn.addEventListener('click', hideModal);
+
+        // Initialize Firebase and authenticate user
+        async function initializeFirebase() {
+            showSpinner();
+            try {
+                // Retrieve app ID and Firebase config from global variables
+                appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+                const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+
+                if (Object.keys(firebaseConfig).length === 0) {
+                    console.error("Firebase config is missing or empty.");
+                    showModal("Kesalahan", "Konfigurasi Firebase tidak ditemukan. Aplikasi mungkin tidak berfungsi dengan benar.");
+                    hideSpinner();
+                    return;
+                }
+
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+
+                // Sign in with custom token if available, otherwise anonymously
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+
+                // Listen for auth state changes
+                onAuthStateChanged(auth, (user) => {
+                    if (user) {
+                        userId = user.uid;
+                        userIdDisplay.textContent = userId;
+                        // Load fuel entries after successful authentication
+                        loadFuelEntries();
+                    } else {
+                        userId = crypto.randomUUID(); // Fallback for unauthenticated users
+                        userIdDisplay.textContent = userId + " (Anonim)";
+                        showModal("Informasi", "Anda masuk sebagai pengguna anonim. Data Anda akan disimpan secara lokal.");
+                        // For anonymous users, we might not load from Firestore unless they sign in.
+                        // For this app, we will still attempt to use Firestore with the generated ID.
+                        loadFuelEntries(); // Still try to load, but it will be user-specific.
+                    }
+                    hideSpinner();
+                });
+
+            } catch (error) {
+                console.error("Error initializing Firebase or authenticating:", error);
+                showModal("Kesalahan", `Gagal menginisialisasi Firebase: ${error.message}`);
+                hideSpinner();
+            }
+        }
+
+        // Function to show loading spinner
+        function showSpinner() {
+            loadingSpinner.classList.remove('hidden');
+        }
+
+        // Function to hide loading spinner
+        function hideSpinner() {
+            loadingSpinner.classList.add('hidden');
+        }
+
+        // Function to save a new fuel entry to Firestore
+        async function saveFuelEntry(entry) {
+            showSpinner();
+            try {
+                // Ensure userId is available before attempting to save
+                if (!userId) {
+                    showModal("Kesalahan", "ID Pengguna tidak tersedia. Harap coba lagi.");
+                    hideSpinner();
+                    return;
+                }
+
+                // Define the collection path for private user data
+                const fuelCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/fuelEntries`);
+                await addDoc(fuelCollectionRef, entry);
+                showModal("Berhasil", "Pengisian BBM berhasil ditambahkan!");
+            } catch (error) {
+                console.error("Error adding document: ", error);
+                showModal("Kesalahan", `Gagal menambahkan pengisian BBM: ${error.message}`);
+            } finally {
+                hideSpinner();
+            }
+        }
+
+        // Function to update an existing fuel entry in Firestore
+        async function updateFuelEntry(id, updatedData) {
+            showSpinner();
+            try {
+                if (!userId) {
+                    showModal("Kesalahan", "ID Pengguna tidak tersedia. Harap coba lagi.");
+                    hideSpinner();
+                    return;
+                }
+                const docRef = doc(db, `artifacts/${appId}/users/${userId}/fuelEntries`, id);
+                await updateDoc(docRef, updatedData);
+                showModal("Berhasil", "Entri berhasil diperbarui!");
+            } catch (error) {
+                console.error("Error updating document: ", error);
+                showModal("Kesalahan", `Gagal memperbarui entri: ${error.message}`);
+            } finally {
+                hideSpinner();
+            }
+        }
+
+        // Function to load fuel entries from Firestore in real-time
+        function loadFuelEntries() {
+            if (!userId || !db) {
+                console.warn("Firestore atau User ID belum siap.");
+                return;
+            }
+
+            const fuelCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/fuelEntries`);
+            // Listen for real-time updates
+            onSnapshot(fuelCollectionRef, (snapshot) => {
+                const entries = [];
+                snapshot.forEach(doc => {
+                    entries.push({ id: doc.id, ...doc.data() });
+                });
+
+                // Store all entries for export functionality and calculations
+                allFuelEntries = entries;
+
+                // Sort entries by timestamp in descending order (newest first) for display
+                entries.sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+                renderFuelEntries(entries);
+
+                // Sort entries by odometer in ascending order for calculations
+                const sortedForCalc = [...entries].sort((a, b) => a.odometer - b.odometer);
+                calculateStatistics(sortedForCalc);
+
+                hideSpinner();
+            }, (error) => {
+                console.error("Error fetching documents: ", error);
+                showModal("Kesalahan", `Gagal memuat riwayat pengisian: ${error.message}`);
+                hideSpinner();
+            });
+        }
+
+        // Function to delete a fuel entry
+        async function deleteFuelEntry(id) {
+            showModal("Konfirmasi Hapus", "Apakah Anda yakin ingin menghapus entri ini?", true, async () => {
+                showSpinner();
+                try {
+                    if (!userId) {
+                        showModal("Kesalahan", "ID Pengguna tidak tersedia. Harap coba lagi.");
+                        hideSpinner();
+                        return;
+                    }
+                    const docRef = doc(db, `artifacts/${appId}/users/${userId}/fuelEntries`, id);
+                    await deleteDoc(docRef);
+                    showModal("Berhasil", "Entri berhasil dihapus!");
+                } catch (error) {
+                    console.error("Error deleting document: ", error);
+                    showModal("Kesalahan", `Gagal menghapus entri: ${error.message}`);
+                } finally {
+                    hideSpinner();
+                }
+            });
+        }
+
+        // Function to render fuel entries to the UI
+        function renderFuelEntries(entries) {
+            fuelEntriesContainer.innerHTML = ''; // Clear previous entries
+            if (entries.length === 0) {
+                noEntriesMessage.classList.remove('hidden');
+            } else {
+                noEntriesMessage.classList.add('hidden');
+                // Sort entries by odometer in ascending order to correctly calculate previous odometer and distance
+                const sortedByOdometer = [...entries].sort((a, b) => a.odometer - b.odometer);
+
+                entries.forEach(entry => {
+                    const totalCost = (entry.liters * entry.pricePerLiter).toLocaleString('id-ID', { style: 'currency', currency: 'IDR' });
+                    // Format date to DD/MM/YYYY
+                    const date = new Date(entry.date).toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' });
+
+                    let previousOdometer = 'N/A';
+                    let totalTrip = 'N/A';
+
+                    // Find the previous entry by odometer for this vehicleName
+                    const entryIndex = sortedByOdometer.findIndex(e => e.id === entry.id);
+                    if (entryIndex > 0) {
+                        const prevEntry = sortedByOdometer[entryIndex - 1];
+                        // Ensure it's for the same vehicle and odometer is increasing
+                        if (prevEntry.vehicleName === entry.vehicleName && prevEntry.odometer < entry.odometer) {
+                            previousOdometer = prevEntry.odometer.toLocaleString('id-ID');
+                            totalTrip = (entry.odometer - prevEntry.odometer).toLocaleString('id-ID');
+                        }
+                    }
+
+                    const entryDiv = document.createElement('div');
+                    entryDiv.className = 'bg-white p-4 rounded-lg shadow-md flex flex-col md:flex-row justify-between items-start md:items-center border border-gray-100 cursor-pointer hover:bg-gray-50 transition duration-150 ease-in-out';
+                    entryDiv.dataset.id = entry.id; // Store entry ID for editing
+                    entryDiv.innerHTML = `
+                        <div class="mb-2 md:mb-0 flex-grow">
+                            <p class="text-sm text-gray-500">${date}</p>
+                            <p class="text-lg font-semibold text-gray-800">${entry.vehicleName} - ${entry.liters.toFixed(2)} L (${entry.fuelType})</p>
+                            <p class="text-md text-gray-700">Rp ${entry.pricePerLiter.toLocaleString('id-ID')} / L</p>
+                            <p class="text-md text-gray-700">Odometer: ${entry.odometer.toLocaleString('id-ID')} KM</p>
+                            <p class="text-md text-gray-700">Odometer Sebelumnya: ${previousOdometer} KM</p>
+                            <p class="text-md text-gray-700">Total Perjalanan: ${totalTrip} KM</p>
+                        </div>
+                        <div class="flex items-center space-x-4">
+                            <p class="text-xl font-bold text-blue-600">${totalCost}</p>
+                            <button data-id="${entry.id}" class="delete-btn px-3 py-1 bg-red-500 text-white rounded-md hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-red-400 focus:ring-offset-2 transition duration-150 ease-in-out">Hapus</button>
+                        </div>
+                    `;
+                    fuelEntriesContainer.appendChild(entryDiv);
+                });
+
+                // Add event listeners for delete buttons
+                document.querySelectorAll('.delete-btn').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        e.stopPropagation(); // Prevent triggering the edit modal
+                        const id = e.target.dataset.id;
+                        deleteFuelEntry(id);
+                    });
+                });
+
+                // Add event listeners for editing entries
+                document.querySelectorAll('#fuelEntriesContainer > div').forEach(entryDiv => {
+                    entryDiv.addEventListener('click', (e) => {
+                        const id = entryDiv.dataset.id;
+                        const entryToEdit = allFuelEntries.find(entry => entry.id === id);
+                        if (entryToEdit) {
+                            showEditModal(entryToEdit);
+                        }
+                    });
+                });
+            }
+        }
+
+        // Function to show the edit modal
+        function showEditModal(entry) {
+            editEntryId.value = entry.id;
+            editDateInput.value = entry.date;
+            editFuelTypeSelect.value = entry.fuelType;
+            editTotalAmountPaidInput.value = (entry.liters * entry.pricePerLiter); // Calculate total amount paid
+            editOdometerInput.value = entry.odometer;
+
+            showModal("Edit Pengisian BBM", "", false, async () => {
+                const id = editEntryId.value;
+                const updatedDate = editDateInput.value;
+                const updatedFuelType = editFuelTypeSelect.value;
+                const updatedTotalAmountPaid = parseFloat(editTotalAmountPaidInput.value);
+                const updatedOdometer = parseInt(editOdometerInput.value);
+
+                if (!updatedDate || isNaN(updatedTotalAmountPaid) || isNaN(updatedOdometer) || !updatedFuelType) {
+                    showModal("Peringatan", "Harap lengkapi semua kolom dengan benar.");
+                    return;
+                }
+
+                const updatedPricePerLiter = fixedFuelPrices[updatedFuelType];
+                if (!updatedPricePerLiter || updatedPricePerLiter <= 0) {
+                    showModal("Peringatan", "Harga per liter tidak valid.");
+                    return;
+                }
+
+                const updatedLiters = updatedTotalAmountPaid / updatedPricePerLiter;
+
+                const updatedEntry = {
+                    date: updatedDate,
+                    fuelType: updatedFuelType,
+                    totalAmountPaid: updatedTotalAmountPaid, // Store total amount paid for consistency
+                    liters: updatedLiters,
+                    pricePerLiter: updatedPricePerLiter,
+                    odometer: updatedOdometer,
+                    vehicleName: "Scoopy" // Ensure vehicle name remains Scoopy
+                };
+
+                await updateFuelEntry(id, updatedEntry);
+                hideModal();
+            }, true); // Pass true for isEdit
+        }
+
+
+        // Function to calculate and display statistics including odometer usage and average consumption
+        function calculateStatistics(entries) {
+            let totalLiters = 0;
+            let totalCost = 0;
+            let lastDistance = 0;
+            let totalDistance = 0;
+            let totalLitersForAvg = 0;
+
+            if (entries.length > 1) {
+                // Calculate last distance and total distance for average consumption
+                for (let i = 1; i < entries.length; i++) {
+                    const distance = entries[i].odometer - entries[i-1].odometer;
+                    if (distance > 0) { // Ensure odometer is increasing
+                        totalDistance += distance;
+                        // Use liters from the *current* fill-up to calculate consumption for the distance *covered since the previous fill-up*.
+                        // This is a common way to approximate fuel efficiency.
+                        totalLitersForAvg += entries[i].liters;
+                    }
+                }
+                // Calculate distance from the last two entries (assuming sorted by odometer)
+                lastDistance = entries[entries.length - 1].odometer - entries[entries.length - 2].odometer;
+            } else {
+                lastDistance = 0; // Not enough entries to calculate distance
+            }
+
+            entries.forEach(entry => {
+                totalLiters += parseFloat(entry.liters);
+                totalCost += parseFloat(entry.liters) * parseFloat(entry.pricePerLiter);
+            });
+
+            const avgConsumption = totalLitersForAvg > 0 ? (totalDistance / totalLitersForAvg).toFixed(2) : 0;
+
+            totalLitersDisplay.textContent = `${totalLiters.toLocaleString('id-ID', { maximumFractionDigits: 2 })} L`;
+            totalCostDisplay.textContent = totalCost.toLocaleString('id-ID', { style: 'currency', currency: 'IDR' });
+            lastDistanceDisplay.textContent = `${lastDistance.toLocaleString('id-ID')} KM`;
+            avgConsumptionDisplay.textContent = `${avgConsumption} KM/L`;
+        }
+
+        // Function to export data to CSV
+        function exportToCSV(data) {
+            if (data.length === 0) {
+                showModal("Informasi", "Tidak ada data untuk diekspor.");
+                return;
+            }
+
+            // Prepare CSV header
+            const headers = [
+                "Tanggal",
+                "Nama Kendaraan",
+                "Jenis BBM",
+                "Liter",
+                "Harga per Liter (Rp)",
+                "Total Biaya (Rp)",
+                "Odometer (KM)",
+                "Odometer Sebelumnya (KM)",
+                "Jarak Tempuh (KM)",
+                "Konsumsi (KM/L)"
+            ];
+
+            // Sort data by odometer for correct distance calculation in CSV
+            const sortedData = [...data].sort((a, b) => a.odometer - b.odometer);
+
+            // Prepare CSV rows
+            const rows = sortedData.map((entry, index) => {
+                const dateFormatted = new Date(entry.date).toLocaleDateString('id-ID', { day: '2-digit', month: '2-digit', year: 'numeric' });
+                const totalCost = (entry.liters * entry.pricePerLiter);
+
+                let previousOdometer = '';
+                let distance = 0;
+                let consumption = 0;
+
+                if (index > 0) {
+                    const prevEntry = sortedData[index - 1];
+                    if (prevEntry.vehicleName === entry.vehicleName && prevEntry.odometer < entry.odometer) {
+                        previousOdometer = prevEntry.odometer.toFixed(0);
+                        distance = entry.odometer - prevEntry.odometer;
+                        if (distance > 0 && entry.liters > 0) {
+                            consumption = (distance / entry.liters).toFixed(2);
+                        }
+                    }
+                }
+
+                return [
+                    `"${dateFormatted}"`,
+                    `"${entry.vehicleName}"`,
+                    `"${entry.fuelType}"`,
+                    entry.liters.toFixed(2),
+                    entry.pricePerLiter.toFixed(0),
+                    totalCost.toFixed(0),
+                    entry.odometer.toFixed(0),
+                    previousOdometer,
+                    distance.toFixed(0),
+                    consumption
+                ].join(',');
+            });
+
+            const csvContent = [headers.join(','), ...rows].join('\n');
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.setAttribute('download', 'data_pengisian_bbm.csv');
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // Event listener for fuel type change to update price per liter display
+        fuelTypeSelect.addEventListener('change', () => {
+            const selectedFuelType = fuelTypeSelect.value;
+            if (fixedFuelPrices[selectedFuelType]) {
+                displayPricePerLiterSpan.textContent = `Rp ${fixedFuelPrices[selectedFuelType].toLocaleString('id-ID')}`;
+            } else {
+                displayPricePerLiterSpan.textContent = `Pilih jenis BBM`;
+            }
+        });
+
+        // Event listener for form submission
+        fuelForm.addEventListener('submit', async (e) => {
+            e.preventDefault(); // Prevent default form submission
+
+            const vehicleName = vehicleNameInput.value; // Value is fixed to "Scoopy"
+            const date = dateInput.value;
+            const totalAmountPaid = parseFloat(totalAmountPaidInput.value);
+            const odometer = parseInt(odometerInput.value);
+            const fuelType = fuelTypeSelect.value;
+            let pricePerLiter;
+
+            if (!vehicleName || !date || isNaN(totalAmountPaid) || isNaN(odometer) || !fuelType) {
+                showModal("Peringatan", "Harap lengkapi semua kolom dengan benar.");
+                return;
+            }
+
+            if (fixedFuelPrices[fuelType]) {
+                pricePerLiter = fixedFuelPrices[fuelType];
+            } else {
+                showModal("Peringatan", "Jenis BBM tidak valid atau harga per liter tidak ditemukan.");
+                return;
+            }
+
+            if (pricePerLiter <= 0) {
+                showModal("Peringatan", "Harga per liter harus lebih besar dari nol.");
+                return;
+            }
+
+            const liters = totalAmountPaid / pricePerLiter;
+
+            const newEntry = {
+                vehicleName: vehicleName,
+                date: date,
+                liters: liters,
+                pricePerLiter: pricePerLiter,
+                odometer: odometer,
+                fuelType: fuelType,
+                timestamp: Date.now() // Add a timestamp for sorting
+            };
+
+            await saveFuelEntry(newEntry);
+
+            // Clear form fields after submission
+            fuelForm.reset();
+            dateInput.value = ''; // Ensure date field is cleared
+            displayPricePerLiterSpan.textContent = 'Rp 0';
+        });
+
+        // Event listener for export button
+        exportBtn.addEventListener('click', () => {
+            exportToCSV(allFuelEntries);
+        });
+
+        // Register Service Worker for PWA capabilities
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                const swUrl = '/service-worker.js'; // Standard path
+                console.log('Mencoba mendaftarkan Service Worker dari URL:', swUrl);
+                navigator.serviceWorker.register(swUrl)
+                    .then(registration => {
+                        console.log('Service Worker terdaftar dengan scope:', registration.scope);
+                    })
+                    .catch(error => {
+                        console.error('Pendaftaran Service Worker gagal:', error);
+                        console.error('Detail error:', error.message);
+                    });
+            });
+        }
+    </script>
+</body>
+</html>
